@@ -4,7 +4,6 @@ import android.app.Activity;
 import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.os.Handler;
-import android.os.Message;
 import android.view.View;
 import android.view.Window;
 import android.widget.ImageView;
@@ -27,8 +26,7 @@ public class musicplayer2 extends Activity{
     private int tm;
     private TextView progresstime;
     private TextView progressmaxtime;
-
-
+    private Runnable r;
 
 
 
@@ -52,12 +50,28 @@ public class musicplayer2 extends Activity{
         progresstime=(TextView)findViewById(R.id.progresstime);
         progressmaxtime=(TextView)findViewById(R.id.progressmax);
         handler=new Handler();
-        Seekbarchanged sbc=new Seekbarchanged();
+
         seekBar.setMax(mp.getDuration());
-        seekBar.setOnSeekBarChangeListener(sbc);
+        seekBar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                if (fromUser){
+                    mp.seekTo(progress);
+                }
+            }
 
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+                mp.pause();
 
+            }
 
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+                mp.start();
+
+            }
+        });
 
 
         playmusic.setOnClickListener(new View.OnClickListener() {
@@ -65,10 +79,8 @@ public class musicplayer2 extends Activity{
             public void onClick(View v) {
                 playmusic.setVisibility(View.INVISIBLE);
                 pause.setVisibility(View.VISIBLE);
-                Delaythread delaythread=new Delaythread();
+                Delaythread delaythread = new Delaythread();
                 delaythread.start();
-
-
 
                 try {
                     if (mp != null) {
@@ -117,72 +129,45 @@ public class musicplayer2 extends Activity{
             }
         });
 
-         handler=new Handler(){
+        r=new Runnable() {
 
-            @Override
-            public void handleMessage(Message msg) {
-                seekBar.setProgress(mp.getCurrentPosition());
-                tm=mp.getCurrentPosition();
-                long mm=tm/60000;
-                long ss=(tm-mm*60000)/1000;
-                int mt=mp.getDuration();
-
-
-                progresstime.setText(mm+":"+ss+"");
+                    public void run() {
+                        seekBar.setProgress(mp.getCurrentPosition());
+                        //progresstime.setText(mp.getCurrentPosition());
+                        tm=mp.getCurrentPosition();
+                        long mm=tm/60000;
+                        long ss=(tm-mm*60000)/1000;
+                        int mt=mp.getDuration();
+                        progresstime.setText(mm+":"+ss+"");
 
             }
         };
 
 
-
-
     }
 
 
-
-   class Seekbarchanged implements SeekBar.OnSeekBarChangeListener{
-       @Override
-       public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-          //mp.seekTo(progress);
-       }
-
-       @Override
-       public void onStartTrackingTouch(SeekBar seekBar) {
-
-
-       }
-
-       @Override
-       public void onStopTrackingTouch(SeekBar seekBar) {
-
-
-       }
-   }
 
 
     class Delaythread extends Thread
     {
         @Override
-        public void run() {
-            while (true){
-                try {
-                    sleep(100);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-                handler.sendEmptyMessage(0);
-            }
+        public void run()
+        {
+           while (true){
+               synchronized (this){
+               try {
+                   sleep(1000);
+               } catch (InterruptedException e) {
+                   e.printStackTrace();
+               }handler.post(r);
+
+           }
         }
     }
 
-
-
-
-
-
-
-
-
-
-
+    }
 }
+
+
+
